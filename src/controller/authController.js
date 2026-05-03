@@ -14,7 +14,7 @@ exports.register = async (req, res) => {
     }
 
     // 2. Create new user
-    user = new User({ name, email, password, role: role || 'admin' });
+    user = new User({ name, email, password, role: role || 'Admin' });
     
     // Hash password
     const salt = await bcrypt.genSalt(10);
