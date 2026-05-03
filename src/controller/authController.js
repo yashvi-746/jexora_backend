@@ -4,35 +4,39 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 exports.register = async (req, res) => {
-  const { name, email, password, role } = req.body;
   try {
+    const { name, email, password, role } = req.body;
+
+    // 1. Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "Email already registered. Please login instead." });
     }
-    user = new User({ name, email, password, role });
+
+    // 2. Create new user
+    user = new User({ name, email, password, role: role || 'admin' });
+    
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
     await user.save();
-    const payload = {
-      user: {
-        id: user.id,
-        role: user.role,
-      },
-    };
+
+    // 3. Generate Token
+    const payload = { user: { id: user.id, role: user.role } };
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
-        { expiresIn: process.env.Jwt_EXPIRATION },
-        (err, token) => {
-            if (err) throw err;
-            res.json({ 
-              token,
-              user: { id: user.id, name: user.name, email: user.email, role: user.role }
-            });
-        }
+      { expiresIn: process.env.Jwt_EXPIRATION || "24h" },
+      (err, token) => {
+        if (err) throw err;
+        res.json({ 
+          token,
+          user: { id: user.id, name: user.name, email: user.email, role: user.role }
+        });
+      }
     );
   } catch (error) {
+    console.error("REGISTRATION_ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };
