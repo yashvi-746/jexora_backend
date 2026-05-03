@@ -9,7 +9,7 @@ const {
 } = require("../controller/inventoryController");
 
 router.get("/", auth, getInventoryStatus);
-router.post("/create", auth, createInventory);
+router.post("/", auth, createInventory);
 router.put("/:id", auth, updateInventoryById);
 router.delete("/:id", auth, deleteInventory);
 

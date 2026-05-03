@@ -30,26 +30,32 @@ exports.getInventoryStatus = async (req, res) => {
 // CREATE INVENTORY RECORD
 exports.createInventory = async (req, res) => {
   try {
-    const { productId, quantity, minStocks } = req.body;
+    const { productId, warehouseId, quantity, minStocks } = req.body;
 
-    if (!productId) {
-      return res.status(400).json({ message: "productId is required" });
+    if (!productId || !warehouseId) {
+      return res.status(400).json({ message: "Product and Warehouse are required" });
     }
 
-    const existingRecord = await Inventory.findOne({ productId, owner: req.user.id });
+    // Check if record exists for THIS product in THIS warehouse
+    const existingRecord = await Inventory.findOne({ productId, warehouseId, owner: req.user.id });
     if (existingRecord) {
-      return res.status(400).json({ message: "Inventory record already exists for this product" });
+      // If exists, just update the quantity
+      existingRecord.quantity += parseInt(quantity || 0);
+      await existingRecord.save();
+      return res.json({ message: "Stock updated successfully", inventory: existingRecord });
     }
 
     const newRecord = await Inventory.create({
       productId,
+      warehouseId,
       quantity: quantity ?? 0,
       minStocks: minStocks ?? 10,
       owner: req.user.id
     });
 
     const populated = await Inventory.findById(newRecord._id)
-      .populate("productId", "name price units categoryId");
+      .populate("productId", "name price units categoryId")
+      .populate("warehouseId", "name");
 
     res.status(201).json({ message: "Inventory tracking started", inventory: populated });
   } catch (error) {
