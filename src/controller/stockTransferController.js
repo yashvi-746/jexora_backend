@@ -72,7 +72,10 @@ exports.createTransfer = async (req, res) => {
     res.status(201).json({ message: "Stock transfer completed successfully", transfer: newTransfer });
 
   } catch (error) {
-    res.status(500).json({ message: "Error processing transfer", error: error.message });
+    console.error("TRANSFER_ERROR:", error);
+    res.status(400).json({ 
+      message: error.message || "Error processing transfer"
+    });
   }
 };
 
