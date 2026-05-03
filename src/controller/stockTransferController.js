@@ -1,6 +1,7 @@
 const StockTransfer = require("../models/StockTransfer");
 const Inventory = require("../models/Inventory");
 const StockMovement = require("../models/StockMovement");
+const Product = require("../models/Product");
 
 exports.createTransfer = async (req, res) => {
   try {
@@ -26,9 +27,10 @@ exports.createTransfer = async (req, res) => {
     // Process Stock Updates
     for (const item of items) {
       // 1. Decrement from Source
+      const prod = await Product.findById(item.productId);
       const sourceInv = await Inventory.findOne({ productId: item.productId, warehouseId: fromWarehouseId, owner });
       if (!sourceInv || sourceInv.quantity < item.quantity) {
-        throw new Error(`Insufficient stock for product ${item.productId} in source warehouse`);
+        throw new Error(`Insufficient stock for ${prod?.name || 'Product'} in source warehouse`);
       }
       sourceInv.quantity -= item.quantity;
       await sourceInv.save();
