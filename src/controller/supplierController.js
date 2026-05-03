@@ -1,6 +1,6 @@
 const Supplier = require("../models/Supplier");
 const User = require("../models/User");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 // CREATE SUPPLIER
 exports.createSupplier = async (req, res) => {
