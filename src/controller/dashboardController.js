@@ -13,21 +13,21 @@ exports.getDashboardStats = async (req, res) => {
     const userId = req.user.id;
     
     // 1. Fetch user's products first to get IDs for inventory filtering
-    const userProducts = await Product.find({ owner: userId }).populate("categoryId", "name");
+    const userProducts = await Product.find({}).populate("categoryId", "name");
     const userProductIds = userProducts.map(p => p._id);
 
     // 2. Parallel fetch other data for this user
     const [categories, suppliers, inventory, rfqs, pos, allPos, salesOrders, users, recentMovements] = await Promise.all([
-      Category.find({ owner: userId }),
-      Supplier.find({ owner: userId }),
+      Category.find({}),
+      Supplier.find({}),
       Inventory.find({ productId: { $in: userProductIds } }).populate({
         path: 'productId',
         populate: { path: 'categoryId', select: 'name' }
       }),
-      RFQ.find({ owner: userId }),
-      PurchaseOrder.find({ owner: userId }).populate("supplierId", "name").sort({ createdAt: -1 }).limit(5), // Latest 5
-      PurchaseOrder.find({ owner: userId }), // All POs for value calculation
-      SalesOrder.find({ owner: userId }),
+      RFQ.find({}),
+      PurchaseOrder.find({}).populate("supplierId", "name").sort({ createdAt: -1 }).limit(5), // Latest 5
+      PurchaseOrder.find({}), // All POs for value calculation
+      SalesOrder.find({}),
       User.find({ _id: userId }).select("-password"), // Only return self for basic stats
       StockMovement.find({ productId: { $in: userProductIds } }).populate("productId", "name").sort({ createdAt: -1 }).limit(10),
     ]);
@@ -47,9 +47,9 @@ exports.getDashboardStats = async (req, res) => {
     // PO stats
     const poStats = {
       total:    pos.length,
-      pending:  (await PurchaseOrder.countDocuments({ owner: userId, status: { $in: ["pending", "draft", "Pending", "Draft"] } })),
-      approved: (await PurchaseOrder.countDocuments({ owner: userId, status: { $in: ["approved", "Approved"] } })),
-      rejected: (await PurchaseOrder.countDocuments({ owner: userId, status: { $in: ["rejected", "Rejected"] } })),
+      pending:  (await PurchaseOrder.countDocuments({  status: { $in: ["pending", "draft", "Pending", "Draft"] } })),
+      approved: (await PurchaseOrder.countDocuments({  status: { $in: ["approved", "Approved"] } })),
+      rejected: (await PurchaseOrder.countDocuments({  status: { $in: ["rejected", "Rejected"] } })),
     };
 
     // RFQ stats
@@ -175,7 +175,7 @@ exports.getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
     const Product = require("../models/Product");
-    const userProducts = await Product.find({ owner: userId }).select("_id");
+    const userProducts = await Product.find({}).select("_id");
     const userProductIds = userProducts.map(p => p._id);
 
     const inventory = await Inventory.find({ productId: { $in: userProductIds } }).populate("productId", "name price");
@@ -202,7 +202,7 @@ exports.exportReportPDF = async (req, res) => {
   try {
     const userId = req.user.id;
     const Product = require("../models/Product");
-    const userProducts = await Product.find({ owner: userId }).select("_id");
+    const userProducts = await Product.find({}).select("_id");
     const userProductIds = userProducts.map(p => p._id);
 
     const [inventory, pos] = await Promise.all([
@@ -210,7 +210,7 @@ exports.exportReportPDF = async (req, res) => {
         path: 'productId',
         populate: { path: 'categoryId', select: 'name' }
       }),
-      PurchaseOrder.find({ owner: userId, status: "Pending" }).populate("supplierId", "name")
+      PurchaseOrder.find({  status: "Pending" }).populate("supplierId", "name")
     ]);
 
     const totalInventoryValue = inventory.reduce((sum, i) => {

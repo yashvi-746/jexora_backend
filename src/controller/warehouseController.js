@@ -3,8 +3,7 @@ const Warehouse = require("../models/Warehouse");
 exports.createWarehouse = async (req, res) => {
   try {
     const warehouse = new Warehouse({
-      ...req.body,
-      owner: req.user.id
+      ...req.body
     });
     await warehouse.save();
     res.status(201).json(warehouse);

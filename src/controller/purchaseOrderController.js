@@ -12,7 +12,7 @@ exports.createPurchaseOrder = async (req, res) => {
   try {
     const { rfqId, supplierId, items, notes, status } = req.body;
 
-    const count = await PurchaseOrder.countDocuments({ owner: req.user.id });
+    const count = await PurchaseOrder.countDocuments({});
     const purchaseNumber = "PO-" + (count + 1).toString().padStart(4, "0");
 
     let po = await PurchaseOrder.create({
@@ -21,8 +21,7 @@ exports.createPurchaseOrder = async (req, res) => {
         supplierId,
         items,
         notes,
-        status: status || "draft",
-        owner: req.user.id
+        status: status || "draft"
     });
 
     // Automatically update inventory if created as approved
@@ -34,10 +33,10 @@ exports.createPurchaseOrder = async (req, res) => {
 
       for (const item of po.items) {
         if (item.productId && item.quantity) {
-          const prod = await Product.findOne({ _id: item.productId, owner: req.user.id });
+          const prod = await Product.findOne({ _id: item.productId });
           if (prod) {
             await Inventory.findOneAndUpdate(
-              { productId: item.productId, owner: req.user.id },
+              { productId: item.productId },
               { $inc: { quantity: item.quantity } },
               { upsert: true, new: true, setDefaultsOnInsert: true }
             );
@@ -46,8 +45,7 @@ exports.createPurchaseOrder = async (req, res) => {
               productId: item.productId,
               type: "IN",
               quantity: item.quantity,
-              reason: `Initial PO Approval: ${po.purchaseNumber}`,
-              owner: req.user.id
+              reason: `Initial PO Approval: ${po.purchaseNumber}`
             });
           }
         }
@@ -55,7 +53,7 @@ exports.createPurchaseOrder = async (req, res) => {
     }
 
     //populate correctly
-    po = await PurchaseOrder.findOne({ _id: po._id, owner: req.user.id })
+    po = await PurchaseOrder.findOne({ _id: po._id })
     .populate("supplierId", "name email")
     .populate("items.productId", "name");
 
@@ -72,7 +70,7 @@ exports.createPurchaseOrder = async (req, res) => {
  */
 exports.getPurchaseOrders = async (req, res) => {
   try {
-    const purchaseOrders = await PurchaseOrder.find({ owner: req.user.id })
+    const purchaseOrders = await PurchaseOrder.find({})
       .populate("supplierId", "name email")
       .populate("approvedBy", "name email")
       .populate("rfqId");
@@ -88,7 +86,7 @@ exports.getPurchaseOrders = async (req, res) => {
  */
 exports.getPurchaseOrderById = async (req, res) => {
   try {
-    const purchaseOrder = await PurchaseOrder.findOne({ _id: req.params.id, owner: req.user.id })
+    const purchaseOrder = await PurchaseOrder.findOne({ _id: req.params.id })
       .populate("supplierId", "name email")
       .populate("approvedBy", "name email")
       .populate("rfqId")
@@ -111,11 +109,11 @@ exports.updatePurchaseOrder = async (req, res) => {
     const { status, notes, items, approvedBy } = req.body;
     
     // Check old status to prevent double-counting inventory if re-approved
-    const oldPo = await PurchaseOrder.findOne({ _id: req.params.id, owner: req.user.id });
+    const oldPo = await PurchaseOrder.findOne({ _id: req.params.id });
     if (!oldPo) return res.status(404).json({ message: "Purchase Order not found" });
 
     const po = await PurchaseOrder.findOneAndUpdate(
-      { _id: req.params.id, owner: req.user.id },
+      { _id: req.params.id },
       { status, notes, items, approvedBy },
       { new: true }
     ).populate("supplierId", "name email");
@@ -132,8 +130,8 @@ exports.updatePurchaseOrder = async (req, res) => {
       for (const item of po.items) {
         if (item.productId && item.quantity) {
           // Verify product belongs to user
-          const prod = await Product.findOne({ _id: item.productId, owner: req.user.id });
-          const inv = await Inventory.findOne({ productId: item.productId, owner: req.user.id });
+          const prod = await Product.findOne({ _id: item.productId });
+          const inv = await Inventory.findOne({ productId: item.productId });
           const currentQty = inv ? inv.quantity : 0;
           
           if (prod) {
@@ -149,7 +147,7 @@ exports.updatePurchaseOrder = async (req, res) => {
 
             // Update or create inventory
             await Inventory.findOneAndUpdate(
-              { productId: item.productId, owner: req.user.id },
+              { productId: item.productId },
               { $inc: { quantity: item.quantity } },
               { upsert: true, new: true, setDefaultsOnInsert: true }
             );
@@ -159,8 +157,7 @@ exports.updatePurchaseOrder = async (req, res) => {
               productId: item.productId,
               type: "IN",
               quantity: item.quantity,
-              reason: `PO Arrival & Cost Re-average: ${po.purchaseNumber}`,
-              owner: req.user.id
+              reason: `PO Arrival & Cost Re-average: ${po.purchaseNumber}`
             });
           }
         }
@@ -218,7 +215,7 @@ exports.updatePurchaseOrder = async (req, res) => {
  */
 exports.deletePurchaseOrder = async (req, res) => {
   try {
-    const po = await PurchaseOrder.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
+    const po = await PurchaseOrder.findOneAndDelete({ _id: req.params.id });
     if (!po) return res.status(404).json({ message: "Purchase Order not found" });
     res.json({ message: "Purchase order deleted", purchaseOrder: po });
   } catch (error) {
@@ -230,7 +227,7 @@ exports.deletePurchaseOrder = async (req, res) => {
 exports.getPurchaseOrdersForSupplier = async (req, res) => {
     try {
         const supplierId = req.params.supplierId;
-        const purchaseOrders = await PurchaseOrder.find({ supplierId, owner: req.user.id })
+        const purchaseOrders = await PurchaseOrder.find({ supplierId })
         .populate('approvedBy', 'name email')
         .populate('rfqId');
         res.json(purchaseOrders);
@@ -248,9 +245,9 @@ exports.autoGenerateDraftPOs = async (req, res) => {
 
     const userId = req.user.id;
     const [products, movements] = await Promise.all([
-      Product.find({ owner: userId }),
+      Product.find({}),
       StockMovement.find({
-        owner: userId,
+        
         type: "OUT",
         createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
       })
@@ -280,7 +277,7 @@ exports.autoGenerateDraftPOs = async (req, res) => {
         const supplier = await Supplier.findOne({ /* could filter by category or owner */ });
 
         if (supplier) {
-          const count = await PurchaseOrder.countDocuments({ owner: req.user.id });
+          const count = await PurchaseOrder.countDocuments({});
           const purchaseNumber = "AUTO-PO-" + (count + 1).toString().padStart(4, "0");
           
           const po = await PurchaseOrder.create({
@@ -293,8 +290,7 @@ exports.autoGenerateDraftPOs = async (req, res) => {
               total: orderQty * prod.price
             }],
             status: "pending",
-            notes: "AI-Generated: Stock level critically low based on sales velocity.",
-            owner: req.user.id
+            notes: "AI-Generated: Stock level critically low based on sales velocity."
           });
           draftPOs.push(po);
         }

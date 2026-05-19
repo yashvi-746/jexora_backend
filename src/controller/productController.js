@@ -14,15 +14,13 @@ exports.createProduct = async (req, res) => {
       price,
       costPrice: costPrice || 0,
       barcode: barcode || undefined,
-      units,
-      owner: req.user.id
+      units
     });
 
     // Create associated inventory
     await Inventory.create({
       productId: product._id,
-      quantity: initialStock || 0,
-      owner: req.user.id
+      quantity: initialStock || 0
     });
 
     if (req.user) {
@@ -41,7 +39,7 @@ exports.createProduct = async (req, res) => {
 // GET ALL PRODUCTS (with Inventory joined)
 exports.getProducts = async (req, res) => {
   try {
-    const products = await Product.find({ owner: req.user.id }).populate("categoryId", "name");
+    const products = await Product.find({}).populate("categoryId", "name");
     const productIds = products.map(p => p._id);
     
     // Fetch inventory only for this user's products
@@ -72,17 +70,17 @@ exports.getProductById = async (req, res) => {
     const isValidId = req.params.id.match(/^[0-9a-fA-F]{24}$/);
     
     if (isValidId) {
-      product = await Product.findOne({ _id: req.params.id, owner: req.user.id }).populate("categoryId");
+      product = await Product.findOne({ _id: req.params.id }).populate("categoryId");
     }
     
     // If not found by ID or not a valid ID, try searching by barcode
     if (!product) {
-      product = await Product.findOne({ barcode: req.params.id, owner: req.user.id }).populate("categoryId");
+      product = await Product.findOne({ barcode: req.params.id }).populate("categoryId");
     }
     
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    const inventory = await Inventory.findOne({ productId: product._id, owner: req.user.id });
+    const inventory = await Inventory.findOne({ productId: product._id });
     
     const obj = product.toObject();
     res.json({
@@ -107,13 +105,13 @@ exports.updateProduct = async (req, res) => {
     }
 
     const updatedProduct = await Product.findOneAndUpdate(
-      { _id: id, owner: req.user.id }, 
+      { _id: id }, 
       productData, 
       { new: true }
     );
 
     if (updatedProduct && currentStock !== undefined) {
-      const oldInv = await Inventory.findOne({ productId: id, owner: req.user.id });
+      const oldInv = await Inventory.findOne({ productId: id });
       const diff = parseInt(currentStock) - (oldInv ? oldInv.quantity : 0);
       
       if (diff !== 0) {
@@ -122,13 +120,12 @@ exports.updateProduct = async (req, res) => {
           productId: id,
           type: diff > 0 ? "IN" : "OUT",
           quantity: Math.abs(diff),
-          reason: "Product Data Update",
-          owner: req.user.id
+          reason: "Product Data Update"
         });
       }
 
       await Inventory.findOneAndUpdate(
-        { productId: id, owner: req.user.id },
+        { productId: id },
         { quantity: currentStock },
         { upsert: true, new: true }
       );
@@ -152,7 +149,7 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = await Product.findOneAndDelete({ _id: id, owner: req.user.id });
+    const product = await Product.findOneAndDelete({ _id: id });
     if (product && req.user) {
       await logAction(req.user.id, "DELETE_PRODUCT", `Deleted product: ${product.name}`);
       await Inventory.deleteMany({ productId: id });
@@ -168,7 +165,7 @@ exports.deleteProduct = async (req, res) => {
 // GET PRODUCTS BY CATEGORY
 exports.getProductsByCategory = async (req, res) => {
   try {
-    const products = await Product.find({ categoryId: req.params.categoryId, owner: req.user.id });
+    const products = await Product.find({ categoryId: req.params.categoryId });
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });

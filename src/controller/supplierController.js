@@ -30,8 +30,7 @@ exports.createSupplier = async (req, res) => {
       contactPersonName,
       phone,
       address,
-      userId: userId,
-      owner: req.user.id
+      userId: userId
     });
 
     await supplier.save();
@@ -47,7 +46,7 @@ exports.createSupplier = async (req, res) => {
 
 // GET ALL SUPPLIERS
 exports.getSuppliers = async (req, res) => {
-  const suppliers = await Supplier.find({ owner: req.user.id })
+  const suppliers = await Supplier.find({})
     .populate('userId', 'email')
     .collation({ locale: 'en', strength: 2 })
     .sort({ companyName: 1 });
@@ -56,7 +55,7 @@ exports.getSuppliers = async (req, res) => {
 
 // GET SUPPLIER BY ID
 exports.getSupplierById = async (req, res) => {
-  const supplier = await Supplier.findOne({ _id: req.params.id, owner: req.user.id }).populate('userId', 'email');
+  const supplier = await Supplier.findOne({ _id: req.params.id }).populate('userId', 'email');
   if (!supplier) return res.status(404).json({ message: "Supplier not found" });
   res.json(supplier);
 };
@@ -67,7 +66,7 @@ exports.updateSupplier = async (req, res) => {
     const { email, ...supplierData } = req.body;
     
     const updatedSupplier = await Supplier.findOneAndUpdate(
-      { _id: req.params.id, owner: req.user.id },
+      { _id: req.params.id },
       supplierData,
       { new: true },
     );
@@ -86,7 +85,7 @@ exports.updateSupplier = async (req, res) => {
 
 // DELETE SUPPLIER
 exports.deleteSupplier = async (req, res) => {
-  const result = await Supplier.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
+  const result = await Supplier.findOneAndDelete({ _id: req.params.id });
   if (!result) return res.status(404).json({ message: "Supplier not found" });
   res.json({ message: "Supplier deleted" });
 };
@@ -95,14 +94,14 @@ exports.deleteSupplier = async (req, res) => {
 exports.getSupplierPerformance = async (req, res) => {
   try {
     const PurchaseOrder = require("../models/PurchaseOrder");
-    const suppliers = await Supplier.find({ owner: req.user.id }).populate('userId', 'name email');
+    const suppliers = await Supplier.find({}).populate('userId', 'name email');
     
     const performanceData = [];
 
     for (const supplier of suppliers) {
       // Find all completed (approved/delivered) POs for this supplier
       const pos = await PurchaseOrder.find({ 
-        owner: req.user.id,
+        
         supplierId: supplier.userId?._id,
         status: "approved" 
       });

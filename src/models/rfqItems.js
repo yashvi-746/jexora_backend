@@ -21,11 +21,7 @@ const rfqitemSchema = new mongoose.Schema(
         unitPrice: {    
             type: Number,
         },
-        owner: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-        },
+        
     },
     { timestamps: true },
 );

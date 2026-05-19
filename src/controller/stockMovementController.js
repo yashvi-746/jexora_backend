@@ -4,7 +4,7 @@ const Inventory = require("../models/Inventory");
 // GET ALL STOCK MOVEMENTS (filtered by owner)
 exports.getStockMovements = async (req, res) => {
   try {
-    const filter = { owner: req.user.id };
+    const filter = {};
     if (req.query.productId) filter.productId = req.query.productId;
     if (req.query.type) filter.type = req.query.type;
 
@@ -30,11 +30,11 @@ exports.createStockMovement = async (req, res) => {
     
     // 1. Verify product ownership
     const Product = require("../models/Product");
-    const productExists = await Product.findOne({ _id: productId, owner: req.user.id });
+    const productExists = await Product.findOne({ _id: productId });
     if (!productExists) return res.status(404).json({ message: "Product not found or access denied" });
 
     // 2. Get current inventory
-    let inventoryRecord = await Inventory.findOne({ productId, owner: req.user.id });
+    let inventoryRecord = await Inventory.findOne({ productId });
     const stockBefore = inventoryRecord ? inventoryRecord.quantity : 0;
 
     let stockAfter;
@@ -52,7 +52,7 @@ exports.createStockMovement = async (req, res) => {
       inventoryRecord.quantity = stockAfter;
       await inventoryRecord.save();
     } else {
-      await Inventory.create({ productId, quantity: stockAfter, owner: req.user.id });
+      await Inventory.create({ productId, quantity: stockAfter });
     }
 
     // 4. Create movement entry
@@ -65,8 +65,7 @@ exports.createStockMovement = async (req, res) => {
       referenceId: referenceId || "",
       performedBy: performedBy || req.user.email || "User",
       stockBefore,
-      stockAfter,
-      owner: req.user.id
+      stockAfter
     });
 
     const populated = await StockMovement.findById(movement._id)
@@ -99,7 +98,7 @@ exports.createStockMovement = async (req, res) => {
 // DELETE A MOVEMENT LOG
 exports.deleteStockMovement = async (req, res) => {
   try {
-    const deleted = await StockMovement.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
+    const deleted = await StockMovement.findOneAndDelete({ _id: req.params.id });
     if (!deleted) return res.status(404).json({ message: "Movement log not found" });
     res.json({ message: "Movement log deleted" });
   } catch (error) {

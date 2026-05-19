@@ -7,16 +7,16 @@ exports.getInventoryStatus = async (req, res) => {
 
     // Repair Step: Find inventory records for user's products that might be missing the owner field
     const Product = require("../models/Product");
-    const userProducts = await Product.find({ owner: userId }).select("_id");
+    const userProducts = await Product.find({}).select("_id");
     const userProductIds = userProducts.map(p => p._id);
 
     // Update unowned inventory records that belong to this user's products
     await Inventory.updateMany(
       { productId: { $in: userProductIds }, owner: { $exists: false } },
-      { $set: { owner: userId } }
+      { $set: {} }
     );
 
-    const inventoryStatus = await Inventory.find({ owner: userId })
+    const inventoryStatus = await Inventory.find({})
       .populate("productId", "name price units categoryId")
       .populate({ path: "productId", populate: { path: "categoryId", select: "name" } })
       .sort({ createdAt: -1 });
@@ -37,7 +37,7 @@ exports.createInventory = async (req, res) => {
     }
 
     // Check if record exists for THIS product in THIS warehouse
-    const existingRecord = await Inventory.findOne({ productId, warehouseId, owner: req.user.id });
+    const existingRecord = await Inventory.findOne({ productId, warehouseId });
     if (existingRecord) {
       // If exists, just update the quantity
       existingRecord.quantity += parseInt(quantity || 0);
@@ -49,8 +49,7 @@ exports.createInventory = async (req, res) => {
       productId,
       warehouseId,
       quantity: quantity ?? 0,
-      minStocks: minStocks ?? 10,
-      owner: req.user.id
+      minStocks: minStocks ?? 10
     });
 
     const populated = await Inventory.findById(newRecord._id)
@@ -69,7 +68,7 @@ exports.updateInventoryById = async (req, res) => {
     const { id } = req.params;
     const { quantity, minStocks } = req.body;
 
-    const oldRecord = await Inventory.findOne({ _id: id, owner: req.user.id });
+    const oldRecord = await Inventory.findOne({ _id: id });
     if (!oldRecord) return res.status(404).json({ message: "Inventory record not found" });
 
     const updateData = {};
@@ -84,8 +83,7 @@ exports.updateInventoryById = async (req, res) => {
         productId: oldRecord.productId,
         type: diff > 0 ? "IN" : "OUT",
         quantity: Math.abs(diff),
-        reason: "Manual Update",
-        owner: req.user.id
+        reason: "Manual Update"
       });
     }
 
@@ -101,7 +99,7 @@ exports.updateInventoryById = async (req, res) => {
 // DELETE INVENTORY RECORD
 exports.deleteInventory = async (req, res) => {
   try {
-    const deleted = await Inventory.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
+    const deleted = await Inventory.findOneAndDelete({ _id: req.params.id });
     if (!deleted) {
       return res.status(404).json({ message: "Inventory record not found" });
     }

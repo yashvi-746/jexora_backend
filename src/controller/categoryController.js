@@ -4,10 +4,13 @@ const Category = require("../models/Category");
 exports.createCategory = async (req, res) => {
   try {
     const { name } = req.body;
-    const category = new Category({ name, owner: req.user.id });
+    const category = new Category({ name });
     await category.save();
     res.status(201).json({ message: "Category created", category });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "A category with this name already exists!" });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -16,7 +19,7 @@ exports.createCategory = async (req, res) => {
 exports.updateCategory = async (req, res) => {
   try {
     const updated = await Category.findOneAndUpdate(
-      { _id: req.params.id, owner: req.user.id }, 
+      { _id: req.params.id }, 
       req.body, 
       { new: true }
     );
@@ -30,7 +33,8 @@ exports.updateCategory = async (req, res) => {
 // GET ALL CATEGORIES
 exports.getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ owner: req.user.id });
+    // Fetch all categories (global) so users can see seeded categories too
+    const categories = await Category.find({});
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -40,7 +44,7 @@ exports.getCategories = async (req, res) => {
 // DELETE CATEGORY
 exports.deleteCategory = async (req, res) => {
   try {
-    const deleted = await Category.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
+    const deleted = await Category.findOneAndDelete({ _id: req.params.id });
     if (!deleted) return res.status(404).json({ message: "Category not found" });
     res.json({ message: "Category deleted" });
   } catch (error) {

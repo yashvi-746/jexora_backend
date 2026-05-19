@@ -7,11 +7,7 @@ const categorySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    
   },
   { timestamps: true },
 );

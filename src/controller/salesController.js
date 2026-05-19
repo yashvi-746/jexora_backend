@@ -8,7 +8,7 @@ exports.createSalesOrder = async (req, res) => {
     const { customerId, items, notes, status } = req.body;
     const userId = req.user.id;
 
-    const count = await SalesOrder.countDocuments({ owner: userId });
+    const count = await SalesOrder.countDocuments({});
     const orderNumber = "SO-" + (count + 1).toString().padStart(4, "0");
 
     const totalAmount = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
@@ -29,8 +29,7 @@ exports.createSalesOrder = async (req, res) => {
       items,
       totalAmount,
       notes,
-      status: status || "draft",
-      owner: userId
+      status: status || "draft"
     });
 
     // If created as confirmed, reduce inventory
@@ -46,7 +45,7 @@ exports.createSalesOrder = async (req, res) => {
 
 exports.getSalesOrders = async (req, res) => {
   try {
-    const orders = await SalesOrder.find({ owner: req.user.id })
+    const orders = await SalesOrder.find({})
       .populate("customerId", "name companyName")
       .populate("items.productId", "name")
       .sort({ createdAt: -1 });
@@ -61,11 +60,11 @@ exports.updateSalesOrder = async (req, res) => {
     const { status, items, notes } = req.body;
     const userId = req.user.id;
 
-    const oldOrder = await SalesOrder.findOne({ _id: req.params.id, owner: userId });
+    const oldOrder = await SalesOrder.findOne({ _id: req.params.id });
     if (!oldOrder) return res.status(404).json({ message: "Sales order not found" });
 
     const updatedOrder = await SalesOrder.findOneAndUpdate(
-      { _id: req.params.id, owner: userId },
+      { _id: req.params.id },
       { status, items, notes },
       { new: true }
     ).populate("customerId", "name companyName");
@@ -89,7 +88,7 @@ async function updateStockForSales(order, userId) {
   for (const item of order.items) {
     // 1. Reduce Inventory
     await Inventory.findOneAndUpdate(
-      { productId: item.productId, owner: userId },
+      { productId: item.productId },
       { $inc: { quantity: -item.quantity } }
     );
 
@@ -98,15 +97,14 @@ async function updateStockForSales(order, userId) {
       productId: item.productId,
       type: "OUT",
       quantity: item.quantity,
-      reason: `Sales Order: ${order.orderNumber}`,
-      owner: userId
+      reason: `Sales Order: ${order.orderNumber}`
     });
   }
 }
 
 exports.deleteSalesOrder = async (req, res) => {
   try {
-    const order = await SalesOrder.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
+    const order = await SalesOrder.findOneAndDelete({ _id: req.params.id });
     if (!order) return res.status(404).json({ message: "Sales order not found" });
     res.json({ message: "Sales order deleted" });
   } catch (error) {

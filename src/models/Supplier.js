@@ -11,11 +11,7 @@ const supplierSchema = new mongoose.Schema(
     contactPersonName: { type: String, required: true },
     phone: { type: String, required: true },
     address: { type: String },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    
   },
   { timestamps: true },
 );

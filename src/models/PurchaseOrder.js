@@ -52,11 +52,7 @@ const purchaseOrderSchema = new mongoose.Schema(
     ],
     expectedDeliveryDate: { type: Date },
     deliveryDate: { type: Date },
-    owner: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-    },
+    
     },
 { timestamps: true },
     );

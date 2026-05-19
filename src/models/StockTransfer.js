@@ -12,7 +12,7 @@ const stockTransferSchema = new mongoose.Schema(
       },
     ],
     status: { type: String, enum: ["pending", "completed", "cancelled"], default: "pending" },
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    
     notes: { type: String },
   },
   { timestamps: true },

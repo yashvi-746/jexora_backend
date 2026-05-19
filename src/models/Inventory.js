@@ -14,11 +14,7 @@ const inventorySchema = new mongoose.Schema(
     },
     quantity: { type: Number, default: 0, min: 0 },
     minStocks: { type: Number, default: 10, min: 0 },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    
   },
   { timestamps: true },
 );

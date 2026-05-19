@@ -9,11 +9,7 @@ const customerSchema = new mongoose.Schema(
     address: { type: String },
     city: { type: String },
     taxId: { type: String }, // e.g., GSTIN or VAT
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    
   },
   { timestamps: true }
 );

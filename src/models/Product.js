@@ -13,11 +13,7 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true, min: 0 }, // Selling Price
     costPrice: { type: Number, default: 0, min: 0 }, // Purchase Price
     barcode: { type: String, unique: true, sparse: true },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    
   },
   { timestamps: true },
 );

@@ -27,11 +27,7 @@ const shipmentSchema = new mongoose.Schema(
         recordedAt: { type: Date, default: Date.now },
       },
     ],
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    
   },
   { timestamps: true }
 );

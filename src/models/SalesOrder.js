@@ -33,11 +33,7 @@ const salesOrderSchema = new mongoose.Schema(
     },
     transactionId: { type: String },
     notes: { type: String },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    
   },
   { timestamps: true }
 );

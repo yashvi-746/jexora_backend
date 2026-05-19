@@ -83,7 +83,7 @@ exports.createTransfer = async (req, res) => {
 
 exports.getTransfers = async (req, res) => {
   try {
-    const transfers = await StockTransfer.find({ owner: req.user.id })
+    const transfers = await StockTransfer.find({})
       .populate("fromWarehouseId", "name")
       .populate("toWarehouseId", "name")
       .populate("items.productId", "name")
